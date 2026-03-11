@@ -93,6 +93,15 @@ title: A* Pathfinding Algorithm
   }
 
   /* ── Feature / bullet lists ───────────────────────────── */
+  ul {
+    padding-left: 1.5rem;
+    list-style: disc;
+  }
+
+  ol {
+    padding-left: 1.5rem;
+  }
+
   ul li, ol li {
     margin-bottom: 0.35rem;
     line-height: 1.7;
@@ -107,10 +116,11 @@ title: A* Pathfinding Algorithm
 
 </style>
 
-# A* Pathfinding Algorithm
-**Author:** Andrew Fox  
-**Module:** C++ Programming  
-**Year:** 2026
+<div style="background:#f0f4fb;border-left:4px solid #0f3460;border-radius:4px;padding:10px 16px;margin-bottom:1.5rem;font-size:0.95rem;">
+  <strong>Author:</strong> Andrew Fox &nbsp;|&nbsp;
+  <strong>Module:</strong> C++ Programming &nbsp;|&nbsp;
+  <strong>Year:</strong> 2026
+</div>
 
 ---
 
