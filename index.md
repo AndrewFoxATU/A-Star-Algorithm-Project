@@ -143,7 +143,6 @@ This project implements the A* pathfinding algorithm in modern C++ (C++14). The 
 
 ### Why A* Algorithm?
 
-A* is chosen because it combines the completeness of Dijkstra's algorithm with the speed of a greedy best-first search. By using a heuristic function (Manhattan distance) alongside the actual path cost, A* efficiently finds the optimal shortest path without exhaustively exploring every node.
 
 ### Data Structures
 
@@ -155,7 +154,6 @@ A* is chosen because it combines the completeness of Dijkstra's algorithm with t
 
 ### Heuristic: Manhattan Distance
 
-The Manhattan distance heuristic estimates the cost from a node to the goal by summing the absolute differences in row and column indices: `h = |x1 - x2| + |y1 - y2|`. This is admissible for grid movement without diagonals, ensuring A* always finds the optimal path.
 
 ### Grid Visualization
 The `printGrid()` function renders the grid with:
