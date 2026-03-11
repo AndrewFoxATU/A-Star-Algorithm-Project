@@ -12,6 +12,8 @@ title: A* Pathfinding Algorithm
 
 ## Project Overview
 
+[▶ Open the Interactive A\* Visualizer](visualizer.html)
+
 This project implements the A* pathfinding algorithm in modern C++ (C++14). The application finds the shortest path between two points on a grid while avoiding obstacles.
 
 ### Features
