@@ -35,13 +35,11 @@ jobs:
           ruby-version: "3.3"
           bundler-cache: true
 
-      - name: Install Jekyll
-        run: |
-          gem install jekyll bundler
-
+      - name: Install dependencies
+        run: bundle install
+      
       - name: Build site (Jekyll)
-        run: |
-          jekyll build --source . --destination _site
+        run: bundle exec jekyll build --source . --destination _site
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
