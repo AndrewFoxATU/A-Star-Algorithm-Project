@@ -4,6 +4,26 @@ title: A* Pathfinding Algorithm
 ---
 
 <style>
+  /* Basic report formatting for rendered Markdown */
+
+  * {
+    box-sizing: border-box;
+  }
+  
+  html {
+    font-size: 16px;
+  }
+  
+  body {
+    margin: 0;
+    padding: 2rem;
+    font-family: Arial, Helvetica, sans-serif;
+    line-height: 1.6;
+    color: #111;
+    background: #fff;
+    max-width: 900px;
+  }
+  
   /* ── Section headings ─────────────────────────────────── */
   h2 {
     border-left: 4px solid #e94560;
