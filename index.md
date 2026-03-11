@@ -3,6 +3,110 @@ layout: default
 title: A* Pathfinding Algorithm
 ---
 
+<style>
+  /* ── Section headings ─────────────────────────────────── */
+  h2 {
+    border-left: 4px solid #e94560;
+    padding-left: 12px;
+    margin-top: 2rem;
+    color: #0f3460;
+  }
+
+  h3 {
+    color: #533483;
+    margin-top: 1.4rem;
+  }
+
+  /* ── Visualizer CTA link ──────────────────────────────── */
+  a[href="visualizer.html"] {
+    display: inline-block;
+    background: #0f3460;
+    color: #fff !important;
+    padding: 10px 22px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 1rem;
+    text-decoration: none;
+    letter-spacing: 0.5px;
+    transition: background 0.2s, transform 0.15s;
+    margin: 0.5rem 0 1rem;
+  }
+
+  a[href="visualizer.html"]:hover {
+    background: #e94560;
+    transform: translateY(-2px);
+  }
+
+  /* ── Tables ───────────────────────────────────────────── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0 1.5rem;
+    font-size: 0.92rem;
+  }
+
+  thead th {
+    background: #0f3460;
+    color: #fff;
+    padding: 10px 14px;
+    text-align: left;
+    border: 1px solid #0a2540;
+  }
+
+  tbody tr:nth-child(even) {
+    background: #f0f4fb;
+  }
+
+  tbody tr:hover {
+    background: #dde8f8;
+  }
+
+  tbody td {
+    padding: 8px 14px;
+    border: 1px solid #d0d9e8;
+    vertical-align: middle;
+  }
+
+  /* ── Inline code & code blocks ────────────────────────── */
+  code {
+    background: #1a1a2e;
+    color: #e94560;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.88em;
+  }
+
+  pre {
+    background: #1a1a2e;
+    color: #eee;
+    padding: 14px 18px;
+    border-radius: 6px;
+    overflow-x: auto;
+    line-height: 1.6;
+  }
+
+  pre code {
+    background: none;
+    color: inherit;
+    padding: 0;
+    font-size: 0.9em;
+  }
+
+  /* ── Feature / bullet lists ───────────────────────────── */
+  ul li, ol li {
+    margin-bottom: 0.35rem;
+    line-height: 1.7;
+  }
+
+  /* ── Horizontal rules ─────────────────────────────────── */
+  hr {
+    border: none;
+    border-top: 2px solid #e2e8f0;
+    margin: 2rem 0;
+  }
+
+</style>
+
 # A* Pathfinding Algorithm
 **Author:** Andrew Fox  
 **Module:** C++ Programming  
