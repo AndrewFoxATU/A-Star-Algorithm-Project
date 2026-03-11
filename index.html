@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>A* Algorithm Visualizer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 6px;
+      color: #e94560;
+      letter-spacing: 1px;
+    }
+
+    p.subtitle {
+      font-size: 0.9rem;
+      color: #aaa;
+      margin-bottom: 18px;
+      text-align: center;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 16px;
+      justify-content: center;
+    }
+
+    button {
+      padding: 8px 18px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: opacity 0.2s;
+    }
+    button:hover { opacity: 0.85; }
+
+    #btn-start   { background: #0f3460; color: #fff; }
+    #btn-clear   { background: #533483; color: #fff; }
+    #btn-maze    { background: #16213e; color: #e94560; border: 1px solid #e94560; }
+    #btn-speed   { background: #16213e; color: #aaa;    border: 1px solid #555; }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 14px;
+      justify-content: center;
+      font-size: 0.8rem;
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-box  { width: 18px; height: 18px; border-radius: 3px; flex-shrink: 0; }
+
+    #grid-container {
+      border: 2px solid #0f3460;
+      border-radius: 4px;
+      line-height: 0;
+      user-select: none;
+    }
+
+    canvas { display: block; cursor: crosshair; }
+
+    .status {
+      margin-top: 12px;
+      font-size: 0.85rem;
+      color: #aaa;
+      min-height: 1.2em;
+      text-align: center;
+    }
+
+    .info {
+      margin-top: 18px;
+      max-width: 620px;
+      font-size: 0.8rem;
+      color: #888;
+      text-align: center;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+
+<h1>A* Algorithm Visualizer</h1>
+<p class="subtitle">Click to place start/end, drag to draw walls, then hit Visualize.</p>
+
+<div class="controls">
+  <button id="btn-start">▶ Visualize</button>
+  <button id="btn-maze">Generate Maze</button>
+  <button id="btn-clear">Clear Grid</button>
+  <button id="btn-speed">Speed: Fast</button>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-box" style="background:#e94560"></div>Start</div>
+  <div class="legend-item"><div class="legend-box" style="background:#f5a623"></div>End</div>
+  <div class="legend-item"><div class="legend-box" style="background:#1a1a2e;border:1px solid #333"></div>Empty</div>
+  <div class="legend-item"><div class="legend-box" style="background:#0f3460"></div>Wall</div>
+  <div class="legend-item"><div class="legend-box" style="background:#64b5f6"></div>Visited</div>
+  <div class="legend-item"><div class="legend-box" style="background:#fff176"></div>Path</div>
+</div>
+
+<div id="grid-container">
+  <canvas id="canvas"></canvas>
+</div>
+
+<div class="status" id="status">Click a cell to set the Start node.</div>
+
+<div class="info">
+  <strong>How it works:</strong> A* is a best-first search algorithm that finds the shortest path
+  between two nodes. It uses a heuristic (Manhattan distance here) to guide the search,
+  expanding the most promising node first. Nodes on the open list are candidates to explore;
+  once a node is moved to the closed list it is finalized. The path is reconstructed by
+  following parent pointers from the end node back to the start.
+</div>
+
+<script>
+(() => {
+  const CELL = 24;
+  const COLS = 30;
+  const ROWS = 22;
+
+  const COLORS = {
+    empty:   '#16213e',
+    wall:    '#0f3460',
+    start:   '#e94560',
+    end:     '#f5a623',
+    open:    '#4caf50',
+    closed:  '#64b5f6',
+    path:    '#fff176',
+    grid:    '#1a1a2e',
+  };
+
+  const canvas = document.getElementById('canvas');
+  const ctx    = canvas.getContext('2d');
+  const status = document.getElementById('status');
+
+  canvas.width  = COLS * CELL;
+  canvas.height = ROWS * CELL;
+
+  // --- State ---
+  let grid   = [];   // 'empty' | 'wall' | 'start' | 'end'
+  let phase  = 'start'; // 'start' | 'end' | 'wall'
+  let startNode = null;
+  let endNode   = null;
+  let running   = false;
+  let speedLabels = ['Fast', 'Medium', 'Slow'];
+  let speedIdx    = 0;
+  const delayMs   = () => [0, 30, 80][speedIdx];
+
+  function initGrid() {
+    grid = Array.from({ length: ROWS }, () => Array(COLS).fill('empty'));
+  }
+
+  function drawCell(r, c, type) {
+    const x = c * CELL;
+    const y = r * CELL;
+    ctx.fillStyle = COLORS[type] || COLORS.empty;
+    ctx.fillRect(x + 1, y + 1, CELL - 2, CELL - 2);
+  }
+
+  function drawGrid() {
+    ctx.fillStyle = COLORS.grid;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = '#0d1b2a';
+    ctx.lineWidth = 1;
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        drawCell(r, c, grid[r][c]);
+      }
+    }
+  }
+
+  // --- A* ---
+  function heuristic(a, b) {
+    return Math.abs(a.r - b.r) + Math.abs(a.c - b.c);
+  }
+
+  function neighbors(node) {
+    const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+    return dirs
+      .map(([dr, dc]) => ({ r: node.r + dr, c: node.c + dc }))
+      .filter(n => n.r >= 0 && n.r < ROWS && n.c >= 0 && n.c < COLS
+                && grid[n.r][n.c] !== 'wall');
+  }
+
+  function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  async function runAstar() {
+    if (!startNode || !endNode) {
+      status.textContent = 'Please place both a Start and an End node first.';
+      return;
+    }
+    running = true;
+
+    // Clear previous visualization (keep walls / start / end)
+    for (let r = 0; r < ROWS; r++)
+      for (let c = 0; c < COLS; c++)
+        if (grid[r][c] === 'open' || grid[r][c] === 'closed' || grid[r][c] === 'path')
+          grid[r][c] = 'empty';
+    drawGrid();
+
+    const key   = n => `${n.r},${n.c}`;
+    const gScore = {};
+    const fScore = {};
+    const cameFrom = {};
+
+    const openSet = [];
+
+    gScore[key(startNode)] = 0;
+    fScore[key(startNode)] = heuristic(startNode, endNode);
+    openSet.push(startNode);
+
+    let found = false;
+    let iterations = 0;
+
+    while (openSet.length > 0) {
+      // Pick node with lowest fScore
+      openSet.sort((a, b) => (fScore[key(a)] ?? Infinity) - (fScore[key(b)] ?? Infinity));
+      const current = openSet.shift();
+      const ck = key(current);
+
+      if (current.r === endNode.r && current.c === endNode.c) {
+        found = true;
+        break;
+      }
+
+      // Mark closed
+      if (grid[current.r][current.c] !== 'start') {
+        grid[current.r][current.c] = 'closed';
+        drawCell(current.r, current.c, 'closed');
+      }
+
+      for (const nb of neighbors(current)) {
+        const nk    = key(nb);
+        const tentG = (gScore[ck] ?? Infinity) + 1;
+        if (tentG < (gScore[nk] ?? Infinity)) {
+          cameFrom[nk] = current;
+          gScore[nk]   = tentG;
+          fScore[nk]   = tentG + heuristic(nb, endNode);
+          if (!openSet.some(n => key(n) === nk)) {
+            openSet.push(nb);
+            if (grid[nb.r][nb.c] !== 'end') {
+              grid[nb.r][nb.c] = 'open';
+              drawCell(nb.r, nb.c, 'open');
+            }
+          }
+        }
+      }
+
+      iterations++;
+      if (delayMs() > 0 || iterations % 5 === 0) {
+        await sleep(delayMs());
+      }
+    }
+
+    if (found) {
+      // Reconstruct path
+      let cur = endNode;
+      let pathLen = 0;
+      while (key(cur) !== key(startNode)) {
+        if (grid[cur.r][cur.c] !== 'end') {
+          grid[cur.r][cur.c] = 'path';
+          drawCell(cur.r, cur.c, 'path');
+        }
+        cur = cameFrom[key(cur)];
+        pathLen++;
+        await sleep(20);
+      }
+      status.textContent = `Path found! Length: ${pathLen} cells. Nodes explored: ${iterations}.`;
+    } else {
+      status.textContent = 'No path found — the end node is unreachable.';
+    }
+
+    running = false;
+  }
+
+  // --- Maze generation (recursive division) ---
+  function generateMaze() {
+    if (running) return;
+    initGrid();
+    startNode = null;
+    endNode   = null;
+    phase     = 'start';
+    status.textContent = 'Maze generated! Click to place the Start node.';
+
+    // Fill borders
+    for (let r = 0; r < ROWS; r++)
+      for (let c = 0; c < COLS; c++)
+        if (r === 0 || r === ROWS-1 || c === 0 || c === COLS-1)
+          grid[r][c] = 'wall';
+
+    divide(1, 1, ROWS - 2, COLS - 2);
+    drawGrid();
+  }
+
+  function divide(rStart, cStart, rEnd, cEnd) {
+    const height = rEnd - rStart + 1;
+    const width  = cEnd - cStart + 1;
+    if (height < 3 || width < 3) return;
+
+    let horizontal;
+    if (height > width)       horizontal = true;
+    else if (width > height)  horizontal = false;
+    else                      horizontal = Math.random() < 0.5;
+
+    if (horizontal) {
+      // wallRow is always odd-indexed within the region to keep corridors passable
+      const wallRow = rStart + 1 + 2 * Math.floor(Math.random() * Math.floor((height - 1) / 2));
+      // passCol is always even-indexed (a corridor cell, not a wall cell)
+      const passCol = cStart + 2 * Math.floor(Math.random() * Math.ceil(width / 2));
+      for (let c = cStart; c <= cEnd; c++) {
+        if (c !== passCol) grid[wallRow][c] = 'wall';
+      }
+      divide(rStart, cStart, wallRow - 1, cEnd);
+      divide(wallRow + 1, cStart, rEnd, cEnd);
+    } else {
+      // wallCol is always odd-indexed; passRow is always even-indexed (corridor cell)
+      const wallCol = cStart + 1 + 2 * Math.floor(Math.random() * Math.floor((width - 1) / 2));
+      const passRow = rStart + 2 * Math.floor(Math.random() * Math.ceil(height / 2));
+      for (let r = rStart; r <= rEnd; r++) {
+        if (r !== passRow) grid[r][wallCol] = 'wall';
+      }
+      divide(rStart, cStart, rEnd, wallCol - 1);
+      divide(rStart, wallCol + 1, rEnd, cEnd);
+    }
+  }
+
+  // --- Input ---
+  function cellFromEvent(e) {
+    const rect = canvas.getBoundingClientRect();
+    const x    = e.clientX - rect.left;
+    const y    = e.clientY - rect.top;
+    return { r: Math.floor(y / CELL), c: Math.floor(x / CELL) };
+  }
+
+  let mouseDown = false;
+  let wallMode  = false; // true = painting walls, false = erasing
+
+  canvas.addEventListener('mousedown', e => {
+    if (running) return;
+    mouseDown = true;
+    const { r, c } = cellFromEvent(e);
+
+    if (phase === 'start') {
+      if (startNode) grid[startNode.r][startNode.c] = 'empty';
+      startNode = { r, c };
+      grid[r][c] = 'start';
+      drawGrid();
+      phase = 'end';
+      status.textContent = 'Start placed. Now click to set the End node.';
+    } else if (phase === 'end') {
+      if (grid[r][c] === 'start') return;
+      if (endNode) grid[endNode.r][endNode.c] = 'empty';
+      endNode = { r, c };
+      grid[r][c] = 'end';
+      drawGrid();
+      phase = 'wall';
+      status.textContent = 'End placed. Drag to draw walls, then click Visualize.';
+    } else {
+      if (grid[r][c] === 'start' || grid[r][c] === 'end') return;
+      wallMode = grid[r][c] !== 'wall';
+      grid[r][c] = wallMode ? 'wall' : 'empty';
+      drawCell(r, c, grid[r][c]);
+    }
+  });
+
+  canvas.addEventListener('mousemove', e => {
+    if (!mouseDown || running || phase !== 'wall') return;
+    const { r, c } = cellFromEvent(e);
+    if (grid[r][c] === 'start' || grid[r][c] === 'end') return;
+    grid[r][c] = wallMode ? 'wall' : 'empty';
+    drawCell(r, c, grid[r][c]);
+  });
+
+  window.addEventListener('mouseup', () => { mouseDown = false; });
+
+  // Touch support
+  canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    canvas.dispatchEvent(new MouseEvent('mousedown', {
+      clientX: e.touches[0].clientX, clientY: e.touches[0].clientY
+    }));
+  }, { passive: false });
+
+  canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    canvas.dispatchEvent(new MouseEvent('mousemove', {
+      clientX: e.touches[0].clientX, clientY: e.touches[0].clientY
+    }));
+  }, { passive: false });
+
+  // --- Buttons ---
+  document.getElementById('btn-start').addEventListener('click', () => {
+    if (!running) runAstar();
+  });
+
+  document.getElementById('btn-clear').addEventListener('click', () => {
+    if (running) return;
+    initGrid();
+    startNode = null;
+    endNode   = null;
+    phase     = 'start';
+    status.textContent = 'Grid cleared. Click to place the Start node.';
+    drawGrid();
+  });
+
+  document.getElementById('btn-maze').addEventListener('click', generateMaze);
+
+  document.getElementById('btn-speed').addEventListener('click', function() {
+    speedIdx = (speedIdx + 1) % speedLabels.length;
+    this.textContent = `Speed: ${speedLabels[speedIdx]}`;
+  });
+
+  // --- Init ---
+  initGrid();
+  drawGrid();
+})();
+</script>
+</body>
+</html>
