@@ -69,21 +69,6 @@ For a detailed step-by-step walkthrough with algorithm snapshots showing f/g/h v
 
 ---
 
-## Project Structure
-
-```
-A-Star-Algorithm-Project/
-├── AStarAlgorithm.h       # Declarations: gridParameters, Node, AStarAlgorithm
-├── AStarAlgorithm.cpp     # A* implementation, grid population, rendering
-├── GridUtils.cpp           # Random obstacle generation
-├── Tests.cpp               # 10 validation checks
-├── ConsoleColors.h         # ANSI colour constants, Windows console setup
-├── main.cpp                # Entry point: tests, pathfinding, display
-└── index.html              # GitHub Pages report
-```
-
----
-
 ## Test Suite
 
 The test suite runs automatically at startup. If any check fails, the program halts before pathfinding begins.
